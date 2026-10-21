@@ -116,9 +116,6 @@ est.show()
 Pass the same `max_tokens` you'll give the real API. `est.report()` returns the totals as a
 dict, and `est.count(text_or_messages)` counts tokens without generating anything.
 
-Run the whole pipeline, not just one prompt. In multi-turn or agentic pipelines the input of
-later calls includes earlier outputs, so it can only be measured by running the loop.
-
 ### From the command line
 
 For independent single-call examples, put one `{"messages": [...]}` per line in a JSONL file:
@@ -152,7 +149,7 @@ All numbers are totals over the sample. To estimate a full run, scale them by
 
 `input_tokens` and `output_tokens` are multiplied by `CORRECTION` (1.5 in `token_estimator.py`),
 because Claude's tokenizer produces about 1.5× as many tokens as Qwen's for the same text. The
-per-call rows in `est.calls` and the `log_path` file are raw Qwen counts.
+per-call rows in `est.calls` and the `log_path` file are raw Qwen counts. Gives a better estimate overall with the claude models I tried, but as you work with other api models you may get a better feel for this ratio for each one. It's just a constant in the script that you can edit.
 
 - **`truncated_calls`** counts calls that hit `max_tokens`. A high number means the local model
   was cut off, so `output_tokens` is probably too low.
