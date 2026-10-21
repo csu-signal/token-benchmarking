@@ -162,7 +162,7 @@ Once you've run this tool to estimate the token count and scaled them to your fu
 $$ \text{Estimated Cost} = \left( \frac{\text{Input Tokens}}{1,000,000} \times \text{Price}_{\text{Input/1M}} \right) + \left( \frac{\text{Output Tokens}}{1,000,000} \times \text{Price}_{\text{Output/1M}} \right) $$
 
 
-To get the price rate values (input/output price per 1M tokens) for your model go to the respective link for the model provider:
+To get the price rate values (input/output price per 1M tokens) for your model, follow the respective link for the billing chart of your model provider:
 
 Anthropic: https://platform.claude.com/docs/en/about-claude/pricing
 
