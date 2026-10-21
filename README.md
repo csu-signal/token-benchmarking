@@ -153,3 +153,18 @@ per-call rows in `est.calls` and the `log_path` file are raw Qwen counts. Gives 
 
 - **`truncated_calls`** counts calls that hit `max_tokens`. A high number means the local model
   was cut off, so `output_tokens` is probably too low.
+
+## Estimating the cost
+
+Once you've run this tool to estimate the token count and scaled them to your full run, you can plug those numbers in to find an estimate for the cost of your run as billed by the API providers. 
+
+
+[Estimated Cost] = ([Estimated Input Tokens] / 1000000) * ([input price per 1M tokens]) + ([Estimated Output Tokens] / 1000000) * ([output price per 1M tokens]) 
+
+To get the price rate values (input/output price per 1M tokens) for your model go to the respective link for the model provider:
+
+Anthropic: https://platform.claude.com/docs/en/about-claude/pricing
+
+OpenAI: https://developers.openai.com/api/docs/pricing
+
+Google: https://ai.google.dev/gemini-api/docs/pricing
