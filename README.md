@@ -159,7 +159,8 @@ per-call rows in `est.calls` and the `log_path` file are raw Qwen counts. Gives 
 Once you've run this tool to estimate the token count and scaled them to your full run, you can plug those numbers in to find an estimate for the cost of your run as billed by the API providers. 
 
 
-[Estimated Cost] = ([Estimated Input Tokens] / 1000000) * ([input price per 1M tokens]) + ([Estimated Output Tokens] / 1000000) * ([output price per 1M tokens]) 
+$$ \text{Estimated Cost} = \left( \frac{\text{Input Tokens}}{1,000,000} \times \text{Price}_{\text{Input/1M}} \right) + \left( \frac{\text{Output Tokens}}{1,000,000} \times \text{Price}_{\text{Output/1M}} \right) $$
+
 
 To get the price rate values (input/output price per 1M tokens) for your model go to the respective link for the model provider:
 
