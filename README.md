@@ -224,7 +224,23 @@ All numbers are totals over the sample. To estimate a full run, scale them by
 
 `input_tokens` and `output_tokens` are multiplied by `CORRECTION` (1.5 in `token_estimator.py`),
 because Claude's tokenizer produces about 1.5× as many tokens as Qwen's for the same text. The
-per-call rows in `est.calls` are raw Qwen counts.
+per-call rows in `est.calls` are raw Qwen counts. Gives a better estimate overall with the claude models I tried, but as you work with other api models you may get a better feel for this ratio for each one. It's just a constant in the script that you can edit.
 
 - **`truncated_calls`** counts calls that hit `max_tokens`. A high number means the local model
   was cut off, so `output_tokens` is probably too low.
+
+## Estimating the cost
+
+Once you've run this tool to estimate the token count and scaled them to your full run, you can plug those numbers in to find an estimate for the cost of your run as billed by the API providers. 
+
+
+$$ \text{Estimated Cost} = \left( \frac{\text{Input Tokens}}{1,000,000} \times \text{Price}_{\text{Input/1M}} \right) + \left( \frac{\text{Output Tokens}}{1,000,000} \times \text{Price}_{\text{Output/1M}} \right) $$
+
+
+To get the price rate values (input/output price per 1M tokens) for your model, follow the respective link for the billing chart of your model provider:
+
+Anthropic: https://platform.claude.com/docs/en/about-claude/pricing
+
+OpenAI: https://developers.openai.com/api/docs/pricing
+
+Google: https://ai.google.dev/gemini-api/docs/pricing
