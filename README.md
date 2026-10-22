@@ -94,7 +94,7 @@ def llm(messages, max_tokens=1024):
 
 ### Example: CRAFT
 
-In CRAFT, each turn the three directors and the builder each call the model once. The swap goes
+In [CRAFT](https://github.com/csu-signal/CRAFT/tree/main), each turn the three directors and the builder each call the model once. The swap goes
 in the one method of each agent that makes the API call; prompts, parsing and game logic stay as
 they are.
 
