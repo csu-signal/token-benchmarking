@@ -5,14 +5,12 @@
         run_pipeline(example, llm=est.chat)
     est.show()
 """
-import argparse
 import json
-from pathlib import Path
 
 MODEL = "Qwen/Qwen2.5-14B-Instruct"
 MESSAGE_OVERHEAD = 4
 REPLY_OVERHEAD = 3
-# Claude's tokenizer produces ~1.5x as many tokens as Qwen's for the same text.
+# claude's tokenizer produces about 1.5x as many tokens as Qwen's for the same text.
 CORRECTION = 1.5
 
 
@@ -25,7 +23,7 @@ def _text(content):
 class TokenEstimator:
     """Chat function backed by a local Qwen model that records token counts per call."""
 
-    def __init__(self, max_tokens=512, device=None, temperature=0.0, log_path=None):
+    def __init__(self, max_tokens=512, device=None, temperature=0.0):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -36,7 +34,6 @@ class TokenEstimator:
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL)
         self.model = AutoModelForCausalLM.from_pretrained(MODEL, torch_dtype="auto").to(device).eval()
         self.max_tokens, self.temperature = max_tokens, temperature
-        self.log_path = Path(log_path) if log_path else None
         eos = self.model.generation_config.eos_token_id
         self.eos_ids = set(eos if isinstance(eos, list) else [eos])
         self.calls = []
@@ -64,12 +61,8 @@ class TokenEstimator:
         stopped = bool(new) and new[-1] in self.eos_ids
         if stopped:
             new = new[:-1]
-        row = {"input_tokens": self.count(messages), "output_tokens": len(new),
-               "truncated": not stopped}
-        self.calls.append(row)
-        if self.log_path:
-            with self.log_path.open("a", encoding="utf-8") as f:
-                f.write(json.dumps(row) + "\n")
+        self.calls.append({"input_tokens": self.count(messages), "output_tokens": len(new),
+                           "truncated": not stopped})
         return self.tokenizer.decode(new, skip_special_tokens=True)
 
     def report(self):
@@ -81,20 +74,3 @@ class TokenEstimator:
 
     def show(self):
         print(json.dumps(self.report(), indent=2))
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Estimate token usage for independent chat examples")
-    parser.add_argument("input", type=Path, help='JSONL file, one {"messages": [...]} per line')
-    parser.add_argument("--max-tokens", type=int, default=512, help="output cap per call")
-    parser.add_argument("--log", type=Path)
-    args = parser.parse_args()
-    examples = [json.loads(line) for line in args.input.read_text(encoding="utf-8").splitlines() if line.strip()]
-    est = TokenEstimator(max_tokens=args.max_tokens, log_path=args.log)
-    for row in examples:
-        est.chat(row["messages"])
-    est.show()
-
-
-if __name__ == "__main__":
-    main()
