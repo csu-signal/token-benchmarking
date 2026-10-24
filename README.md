@@ -204,7 +204,7 @@ The totals cover the 20 sampled secrets and 1 run. A full frontier evaluation us
 
 ### Example 2: CRAFT
 
-`run_craft_est.py` is CRAFT's `run_craft.py` with the estimator added as commented-out blocks.
+`run_craft_est.py` is CRAFT's `run_craft.py` in the craft [repo](https://github.com/csu-signal/CRAFT/tree/main) with the estimator added as commented-out blocks.
 Each agent's `client` is replaced with a stand-in that answers with the
 estimator, so the call each agent already makes goes to the local model instead of the API.
 
