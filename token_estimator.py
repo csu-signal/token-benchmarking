@@ -6,6 +6,7 @@
     est.show()
 """
 import json
+import threading
 
 MODEL = "Qwen/Qwen2.5-14B-Instruct"
 MESSAGE_OVERHEAD = 4
@@ -37,6 +38,8 @@ class TokenEstimator:
         eos = self.model.generation_config.eos_token_id
         self.eos_ids = set(eos if isinstance(eos, list) else [eos])
         self.calls = []
+        # Pipelines may call chat() from several threads; generation on one model runs one at a time.
+        self.lock = threading.Lock()
 
     def count(self, x):
         """Token count of a string, or of a list of chat messages including formatting overhead."""
@@ -54,15 +57,16 @@ class TokenEstimator:
             sampling = {"do_sample": True, "temperature": self.temperature}
         else:
             sampling = {"do_sample": False, "temperature": None, "top_p": None, "top_k": None}
-        with self.torch.inference_mode():
+        with self.lock, self.torch.inference_mode():
             out = self.model.generate(**inputs, max_new_tokens=limit,
                                       pad_token_id=self.tokenizer.pad_token_id, **sampling)
         new = out[0, inputs["input_ids"].shape[1]:].tolist()
         stopped = bool(new) and new[-1] in self.eos_ids
         if stopped:
             new = new[:-1]
-        self.calls.append({"input_tokens": self.count(messages), "output_tokens": len(new),
-                           "truncated": not stopped})
+        with self.lock:
+            self.calls.append({"input_tokens": self.count(messages), "output_tokens": len(new),
+                               "truncated": not stopped})
         return self.tokenizer.decode(new, skip_special_tokens=True)
 
     def report(self):
