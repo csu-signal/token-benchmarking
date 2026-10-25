@@ -300,11 +300,11 @@ agent, if it's on.
    | `__main__`, before the `# ── Run ──` section | Creates one estimator, `EST`, for the whole run |
    | `__main__`, before `print("All done.")` | Prints the totals |
 
-3. Run a few structures with an OpenAI or Claude director model and the builder's tools off:
+3. Run a few structures with an OpenAI or Claude director model:
 
    ```bash
    python run_craft_est.py --mode api --director gpt-4.1-mini --builder gpt-4.1-mini \
-       --no_tools --structures 0,1,2
+       --structures 0,1,2
    ```
 
 The estimator is created once for the whole run because each `TokenEstimator()` loads its own
