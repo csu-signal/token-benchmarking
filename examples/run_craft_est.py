@@ -23,6 +23,7 @@ from tqdm import tqdm
 from typing import Dict
 import pandas as pd
 from openai import OpenAI
+from google import genai
 from dotenv import load_dotenv
 from agents.common_ground_agent import CommonGroundAgent
 # from chair_agent import ChairAgent
@@ -39,30 +40,7 @@ import time
 import sys
 
 # >>> token estimate
-# from types import SimpleNamespace
-# from token_estimator import TokenEstimator
-#
-#
-# class EstimatorClient:
-#     """Stands in for an agent's OpenAI or Anthropic client and answers with the local estimator."""
-#
-#     def __init__(self, est):
-#         self.est = est
-#         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._openai_create))
-#         self.messages = SimpleNamespace(create=self._anthropic_create)
-#
-#     def _openai_create(self, messages, max_tokens=None, **_):
-#         text = self.est.chat(messages, max_tokens=max_tokens)
-#         message = SimpleNamespace(content=text, tool_calls=None)
-#         return SimpleNamespace(choices=[SimpleNamespace(message=message)])
-#
-#     def _anthropic_create(self, messages, max_tokens=None, system=None, **_):
-#         history = ([{"role": "system", "content": system}] if system else []) + messages
-#         text = self.est.chat(history, max_tokens=max_tokens)
-#         call = self.est.calls[-1]
-#         usage = SimpleNamespace(input_tokens=call["input_tokens"], output_tokens=call["output_tokens"])
-#         return SimpleNamespace(content=[SimpleNamespace(type="text", text=text)], usage=usage)
-#
+# from token_estimator import TokenEstimator, EstimatorClient
 #
 # EST = None
 # <<< token estimate
@@ -776,6 +754,8 @@ if __name__ == "__main__":
 
     # >>> token estimate
     # EST = TokenEstimator()
+    # # Gemini directors create a new genai.Client() on every call, so the class itself is replaced.
+    # genai.Client = lambda *args, **kwargs: EstimatorClient(EST)
     # <<< token estimate
 
     # ── Run ───────────────────────────────────────────────────

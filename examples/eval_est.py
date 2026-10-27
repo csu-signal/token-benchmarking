@@ -45,32 +45,8 @@ load_dotenv()
 
 # >>> token estimate
 # import random
-# from types import SimpleNamespace
 # import environment
-# from token_estimator import TokenEstimator
-#
-#
-# class EstimatorClient:
-#     """Stands in for the oracle's OpenAI client and answers with the local estimator."""
-#
-#     def __init__(self, est):
-#         self.est = est
-#         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
-#
-#     def _create(self, messages, max_tokens=None, **_):
-#         text = self.est.chat(messages, max_tokens=max_tokens)
-#         return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=text))])
-#
-#
-# def make_estimator_generator(est, max_tokens=256):
-#     """The selector call from make_frontier_generator, answered by the local estimator."""
-#     def generate_fn(prompt_text):
-#         messages = [
-#             {"role": "system", "content": "You are a helpful assistant. Follow instructions exactly."},
-#             {"role": "user",   "content": prompt_text},
-#         ]
-#         return est.chat(messages, max_tokens=max_tokens).strip()
-#     return generate_fn
+# from token_estimator import TokenEstimator, EstimatorClient
 # <<< token estimate
 
 # ── constants ─────────────────────────────────────────────────────────────────
@@ -337,6 +313,9 @@ def make_frontier_generator(model_name, temperature=1.0, max_tokens=256):
             {"role": "system", "content": "You are a helpful assistant. Follow instructions exactly."},
             {"role": "user",   "content": prompt_text},
         ]
+        # >>> token estimate
+        # return EST.chat(messages, max_tokens=max_tokens).strip()
+        # <<< token estimate
         if model_name.startswith("claude"):
             import anthropic
             client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
@@ -440,9 +419,6 @@ def run_eval(args):
                 print(f"[skip] {target_id} run{run_idx}")
                 continue
             gen    = make_frontier_generator(model_name)
-            # >>> token estimate
-            # gen = make_estimator_generator(EST)
-            # <<< token estimate
             eps    = run_all_episodes(gen, ALL_SECRETS,
                                       desc=f"{model_name} run{run_idx}",
                                       max_workers=8)

@@ -4,7 +4,8 @@ Estimate how many input and output tokens a pipeline will use on a hosted LLM AP
 running it there. You run a small sample of your pipeline against `Qwen/Qwen2.5-14B-Instruct`
 locally, and the tool records the token usage of every call.
 
-Everything is in `token_estimator.py`: the `TokenEstimator` class.
+Everything is in `token_estimator.py`: the `TokenEstimator` class, and `EstimatorClient`, a
+stand-in for an OpenAI, Anthropic or Gemini client.
 
 ## Setup
 
@@ -92,6 +93,38 @@ def llm(messages, max_tokens=1024):
 </tr>
 </table>
 
+### Swapping a client
+
+If your code keeps its API client in an attribute or a module variable, you don't have to touch
+the calls at all. Replace the client with an `EstimatorClient`:
+
+```python
+from token_estimator import TokenEstimator, EstimatorClient
+
+est = TokenEstimator()
+agent.client = EstimatorClient(est)    # replacing OpenAI(), anthropic.Anthropic() or genai.Client()
+```
+
+It answers all three call styles with `est.chat()`:
+
+| Provider | Call | Response fields |
+|---|---|---|
+| OpenAI | `client.chat.completions.create(...)` | `choices[0].message.content`, `finish_reason`, `usage` |
+| Anthropic | `client.messages.create(...)` | `content` text blocks, `stop_reason`, `usage` |
+| Gemini (`google-genai`) | `client.models.generate_content(...)` | `text`, `candidates[0].content.parts`, `finish_reason`, `usage_metadata` |
+
+Token counts in the responses are raw Qwen counts. Other arguments, such as `model` and
+`temperature`, are ignored, and tool calls aren't supported.
+
+If your code creates a new client on every call instead of keeping one, replace the class itself,
+so each new "client" is an `EstimatorClient`:
+
+```python
+from google import genai
+
+genai.Client = lambda *args, **kwargs: EstimatorClient(est)
+```
+
 ## Examples
 
 ### Example 1: Clue Selector Game
@@ -101,8 +134,8 @@ as commented-out blocks.
 
 Each turn makes two model calls:
 
-**Selector**: `make_frontier_generator` in `eval.py`, which `run_episode()` calls through
-`generate_fn(prompt_text)`
+**Selector**: `generate_fn` inside `make_frontier_generator` in `eval.py`, which `run_episode()`
+calls every turn
 
 <table>
 <tr><th>The API call</th><th>The estimator call</th></tr>
@@ -110,28 +143,26 @@ Each turn makes two model calls:
 <td>
 
 ```python
-messages = [
-    {"role": "system", "content": "You are a helpful assistant. Follow instructions exactly."},
-    {"role": "user",   "content": prompt_text},
-]
-kwargs = dict(
-    model                 = model_name,
-    messages              = messages,
-    max_completion_tokens = max_tokens,
-)
-kwargs["temperature"] = temperature
-resp = client.chat.completions.create(**kwargs)
+def generate_fn(prompt_text):
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant. Follow instructions exactly."},
+        {"role": "user",   "content": prompt_text},
+    ]
+    ...
+    resp = client.chat.completions.create(**kwargs)
+    return resp.choices[0].message.content.strip()
 ```
 
 </td>
 <td>
 
 ```python
-messages = [
-    {"role": "system", "content": "You are a helpful assistant. Follow instructions exactly."},
-    {"role": "user",   "content": prompt_text},
-]
-est.chat(messages, max_tokens=max_tokens)
+def generate_fn(prompt_text):
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant. Follow instructions exactly."},
+        {"role": "user",   "content": prompt_text},
+    ]
+    return EST.chat(messages, max_tokens=max_tokens).strip()
 ```
 
 </td>
@@ -174,9 +205,10 @@ est.chat(
 </tr>
 </table>
 
-The selector swap replaces the `generate_fn` that `make_frontier_generator` returns. The oracle
-swap replaces the module-level `client` in `environment.py` with a stand-in that answers with the
-estimator, so `call_clue_holder` itself is unchanged.
+The selector swap is one line in `generate_fn`, right after the messages are built: it returns
+the estimator's reply before the OpenAI or Claude branch runs. The oracle swap replaces the
+module-level `client` in `environment.py` with an `EstimatorClient`, so `call_clue_holder` itself
+is unchanged.
 
 #### Running it
 
@@ -187,10 +219,10 @@ estimator, so `call_clue_holder` itself is unchanged.
 
    | Location | Description |
    |---|---|
-   | After `load_dotenv()` | Imports `TokenEstimator` and defines `EstimatorClient` (the oracle's stand-in client) and `make_estimator_generator` (the selector's) |
+   | After `load_dotenv()` | Imports `TokenEstimator` and `EstimatorClient` |
    | After the constants | Writes results to `eval_results_est/` instead of `eval_results/`, and samples 20 secrets for 1 run |
-   | `run_eval()`, frontier branch | Swaps the selector's `generate_fn` for the estimator's |
-   | `__main__`, before `run_eval(args)` | Creates one estimator, `EST`, and gives the oracle the stand-in client |
+   | `make_frontier_generator()`, in `generate_fn` | Answers the selector with the estimator instead of the API |
+   | `__main__`, before `run_eval(args)` | Creates one estimator, `EST`, and gives the oracle an `EstimatorClient` |
    | `__main__`, after `run_eval(args)` | Prints the totals and exits before the results tables, so `eval_results/aggregated_results.json` isn't overwritten |
 
 3. Run the frontier evaluation:
@@ -205,8 +237,8 @@ The totals cover the 20 sampled secrets and 1 run. A full frontier evaluation us
 ### Example 2: CRAFT
 
 `run_craft_est.py` is CRAFT's `run_craft.py` in the craft [repo](https://github.com/csu-signal/CRAFT/tree/main) with the estimator added as commented-out blocks.
-Each agent's `client` is replaced with a stand-in that answers with the
-estimator, so the call each agent already makes goes to the local model instead of the API.
+Each agent's `client` is replaced with an `EstimatorClient`, so the call each agent already makes
+goes to the local model instead of the API.
 
 These are the calls that get answered locally:
 
@@ -283,8 +315,9 @@ est.chat(
 </tr>
 </table>
 
-The stand-in also answers Claude directors (`_generate_with_anthropic`) and the common ground
-agent, if it's on.
+`EstimatorClient` also answers Claude directors (`_generate_with_anthropic`), Gemini directors
+(`_generate_with_gemini_raw`) and the common ground agent, if it's on. Gemini directors create a
+new `genai.Client()` on every call, so the example replaces that class rather than an attribute.
 
 #### Running it
 
@@ -295,12 +328,12 @@ agent, if it's on.
 
    | Location | Description |
    |---|---|
-   | After the imports | Imports `TokenEstimator` and defines `EstimatorClient`, the stand-in client |
-   | `run_craft_experiments()`, just before `run_single_game(...)` | Gives the builder, the directors and the common ground agent the stand-in client |
-   | `__main__`, before the `# ── Run ──` section | Creates one estimator, `EST`, for the whole run |
+   | After the imports | Imports `TokenEstimator` and `EstimatorClient` |
+   | `run_craft_experiments()`, just before `run_single_game(...)` | Gives the builder, the directors and the common ground agent an `EstimatorClient` |
+   | `__main__`, before the `# ── Run ──` section | Creates one estimator, `EST`, for the whole run, and makes `genai.Client()` return an `EstimatorClient` |
    | `__main__`, before `print("All done.")` | Prints the totals |
 
-3. Run a few structures with an OpenAI or Claude director model:
+3. Run a few structures with any API director model (OpenAI, Claude or Gemini):
 
    ```bash
    python run_craft_est.py --mode api --director gpt-4.1-mini --builder gpt-4.1-mini \
