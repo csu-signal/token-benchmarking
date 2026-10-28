@@ -14,7 +14,7 @@ pip install torch transformers
 ```
 
 The first run downloads the model from Hugging Face (about 30 GB). It needs a GPU with about
-30 GB of memory; on CPU it runs, but very slowly.
+30 GB of memory.
 
 ## Usage
 
