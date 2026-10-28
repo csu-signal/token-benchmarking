@@ -62,32 +62,6 @@ def llm(messages, max_tokens=1024):
 <tr>
 <td>
 
-```python
-import ollama
-
-def llm(messages, max_tokens=1024):
-    response = ollama.chat(
-        model="llama3.1:70b",
-        messages=messages,
-        options={"num_predict": max_tokens},
-    )
-    return response["message"]["content"]
-```
-
-</td>
-<td>
-
-```python
-from token_estimator import TokenEstimator
-
-est = TokenEstimator()
-
-def llm(messages, max_tokens=1024):
-    return est.chat(
-        messages,
-        max_tokens=max_tokens,
-    )
-```
 
 </td>
 </tr>
