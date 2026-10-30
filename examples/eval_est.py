@@ -35,6 +35,8 @@ from dotenv import load_dotenv
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 from openai import OpenAI
+import random
+import environment
 
 from environment import (
     filter_candidates, call_clue_holder, build_llm_prompt,
@@ -44,8 +46,6 @@ from environment import (
 load_dotenv()
 
 # >>> token estimate
-# import random
-# import environment
 # from token_estimator import TokenEstimator, EstimatorClient
 # <<< token estimate
 
